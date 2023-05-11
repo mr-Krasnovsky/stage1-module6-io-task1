@@ -1,59 +1,63 @@
 package com.epam.mjc.io;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 
 public class FileReader {
 
     public Profile getDataFromFile(File file) {
-        String fileData;
-        try (FileInputStream fis = new FileInputStream(file)) {
-            StringBuilder sb = new StringBuilder();
-            while (fis.available() > 0){
-                sb.append((char) fis.read());
-            }
-            fileData = sb.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return createProfile(fileData);
-    }
-
-    public Profile createProfile(String fileData){
         Profile newProfile = new Profile();
-        Set<Map.Entry<String, String>> set= (makeMap(fileData)).entrySet();
-        for(Map.Entry<String, String> me: set) {
-            switch (me.getKey()){
-                case "Name":
-                    newProfile.setName(me.getValue());
-                    break;
-                case "Age":
-                    newProfile.setAge(Integer.parseInt(me.getValue()));
-                    break;
-                case "Email":
-                    newProfile.setEmail(me.getValue());
-                    break;
-                case "Phone":
-                    newProfile.setPhone(Long.parseLong(me.getValue()));
-                    break;
-                default:
-                    System.out.println("Invalid data in the file");
+
+        try (FileInputStream fis = new FileInputStream(file)){
+            int i;
+            StringBuilder sb = new StringBuilder();
+            while ((i =fis.read()) != -1){
+                sb.append((char)i);
             }
+            String data = sb.toString();
+            newProfile = createProfile(data);
+        } catch (IOException e){
+            e.printStackTrace();
         }
-        //
+
         return newProfile;
     }
 
-    public Map<String, String > makeMap(String fileData){
-        Map<String, String> dataMap = new LinkedHashMap<>();
-        String[] arrayData = fileData.split("\r\n");
-        for (String str: arrayData){
-            String[] lineData = str.split(": ");
-            dataMap.put(lineData[0], lineData[1]);
+    public Map<String, String> getProfileMap(String data) {
+        Map<String, String> profileMap = new LinkedHashMap<>();
+        String[] dataArray = data.split("\r\n");
+        for (String str: dataArray){
+            String [] profileString = str.split(": ");
+            profileMap.put(profileString[0],profileString[1]);
         }
-        return dataMap;
+        return profileMap;
+    }
+
+    public Profile createProfile(String data) throws FileBadFormatException {
+        Profile newProfile = new Profile();
+        Map<String, String> profileMap = getProfileMap(data);
+        for(Map.Entry<String, String> entry: profileMap.entrySet()){
+            switch (entry.getKey()){
+                case "Name":
+                    newProfile.setName(entry.getValue());
+                    break;
+                case "Age":
+                    newProfile.setAge(Integer.parseInt(entry.getValue()));
+                    break;
+                case "Email":
+                    newProfile.setEmail(entry.getValue());
+                    break;
+                case "Phone":
+                    newProfile.setPhone(Long.parseLong(entry.getValue()));
+                    break;
+                default:
+                    throw new FileBadFormatException("The data in the file has a bad format" + entry.getKey() );
+            }
+        }
+        return newProfile;
     }
 }
+
